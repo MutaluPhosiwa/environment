@@ -1,0 +1,431 @@
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+
+# QLearningAgent Class
+class QLearningAgent:
+    def __init__(self, learning_rate=0.9, discount_factor=0.4, exploration_rate=0.9): #0.9,0.4,0.6
+        '''def __init__(self, learning_rate=0.7, discount_factor=0.6, exploration_rate=1.0):'''
+        self.q_table = {}
+        self.learning_rate = learning_rate
+        self.discount_factor = discount_factor
+        self.exploration_rate = exploration_rate
+
+    def choose_action(self, state):
+        if random.random() < self.exploration_rate:
+            return random.choice([0, 1, 2])  # Exploration
+        else:
+            return np.argmax(self.q_table.get(state, [0, 0, 0]))  # Exploitation
+
+    def learn(self, state, action, reward, next_state):
+        old_value = self.q_table.get(state, [0, 0, 0])[action]
+        future_value = np.max(self.q_table.get(next_state, [0, 0, 0]))
+        self.q_table[state] = self.q_table.get(state, [0, 0, 0])
+        self.q_table[state][action] = old_value + self.learning_rate * (reward + self.discount_factor * future_value - old_value)
+
+    def decay_exploration(self, decay_rate=0.995, min_rate=0.01):
+        self.exploration_rate = max(self.exploration_rate * decay_rate, min_rate)
+
+
+
+class QLearningAgent3:
+    def __init__(self, learning_rate=0.6, discount_factor=0.05, exploration_rate=0.995):
+        '''def __init__(self, learning_rate=0.7, discount_factor=0.6, exploration_rate=1.0):'''
+        '''def __init__(self, learning_rate=0.7, discount_factor=0.6, exploration_rate=1.0):'''
+        self.q_table = {}
+        self.learning_rate = learning_rate
+        self.discount_factor = discount_factor
+        self.exploration_rate = exploration_rate
+
+    def choose_action(self, state):
+        if random.random() < self.exploration_rate:
+            return random.choice([0, 1, 2])  # Exploration
+        else:
+            return np.argmax(self.q_table.get(state, [0, 0, 0]))  # Exploitation
+
+    def learn(self, state, action, reward, next_state):
+        old_value = self.q_table.get(state, [0, 0, 0])[action]
+        future_value = np.max(self.q_table.get(next_state, [0, 0, 0]))
+        self.q_table[state] = self.q_table.get(state, [0, 0, 0])
+        self.q_table[state][action] = old_value + self.learning_rate * (reward + self.discount_factor * future_value - old_value)
+
+    def decay_exploration(self, decay_rate=0.995, min_rate=0.01):
+        self.exploration_rate = max(self.exploration_rate * decay_rate, min_rate)
+
+
+class QLearningAgent2:
+    def __init__(self, learning_rate=0.05, discount_factor=0.4, exploration_rate=0.6):
+        '''def __init__(self, learning_rate=0.05, discount_factor=0.3, exploration_rate=0.9):'''
+        '''def __init__(self, learning_rate=0.7, discount_factor=0.6, exploration_rate=1.0):'''
+        self.q_table = {}
+        self.learning_rate = learning_rate
+        self.discount_factor = discount_factor
+        self.exploration_rate = exploration_rate
+
+    def choose_action(self, state):
+        if random.random() < self.exploration_rate:
+            return random.choice([0, 1, 2])  # Exploration
+        else:
+            return np.argmax(self.q_table.get(state, [0, 0, 0]))  # Exploitation
+
+    def learn(self, state, action, reward, next_state):
+        old_value = self.q_table.get(state, [0, 0, 0])[action]
+        future_value = np.max(self.q_table.get(next_state, [0, 0, 0]))
+        self.q_table[state] = self.q_table.get(state, [0, 0, 0])
+        self.q_table[state][action] = old_value + self.learning_rate * (reward + self.discount_factor * future_value - old_value)
+
+    def decay_exploration(self, decay_rate=0.995, min_rate=0.01):
+        self.exploration_rate = max(self.exploration_rate * decay_rate, min_rate)
+
+class SolarBatteryEnvPBRS_SF:
+    def __init__(self):
+        self.max_battery = 5  # Maximum battery capacity in kWh
+        self.min_battery_level = 1.0  # Minimum battery level threshold in kWh
+        self.battery_cost_per_unit = 0.05  # Cost per unit of battery usage
+        self.solar_cost_per_unit = 0  # Cost per unit of solar energy (assumed zero)
+        self.solar_input = np.array([0, 0, 0, 0, 0, 0.0006, 0.1472, 0.3802, 0.5538, 0.6695, 0.7284, 0.7303, 0.6844, 0.5871, 0.4379, 0.2418, 0.0183, 0, 0, 0, 0, 0, 0, 0])
+
+        self.demand = np.array([0.6, 0.55, 0.55, 0.5, 0.5, 0.6, 0.7, 1.2, 1.25, 1.1, 
+                                0.8, 0.7, 0.65, 0.6, 0.55, 0.6, 0.9, 1.3, 
+                                1.35, 1.2, 1.1, 0.9, 0.8, 0.7])
+        self.total_steps = len(self.solar_input)  # Total number of steps (hours)
+        self.current_step = 0  # Current step in the environment
+        self.battery_level = self.max_battery  # Initial battery level
+
+    def reset(self):
+        self.current_step = 0  # Reset the step counter
+        self.battery_level = self.max_battery  # Reset battery level
+        return self._get_state()  # Return the initial state
+
+    def _get_state(self):
+        return (self.battery_level, 
+                self.solar_input[self.current_step % len(self.solar_input)], 
+                self.demand[self.current_step % len(self.demand)])
+
+    def get_grid_cost(self, hour):
+        # Eskom's time-of-use pricing rates
+        if 0 <= hour < 6:  # Off-peak
+            return 1.50
+        elif 6 <= hour < 10 or 16 <= hour < 20:  # Peak
+            return 4.50
+        else:  # Standard
+            return 2.91
+
+    def potential_function_peak(self, current_hour, grid_cost):
+        # Higher potential (penalty) for using the grid during peak hours
+        peak_hours = [6, 7, 8, 9, 17, 18, 19, 20]  # Example peak hours
+        return grid_cost if current_hour in peak_hours else 0  # Return cost as penalty
+
+    def potential_function_off_peak(self, current_hour):
+        # Encourage using grid during off-peak hours (positive potential)
+        off_peak_hours = [0, 1, 2, 3, 4, 5, 21, 22, 23]  # Example off-peak hours
+        return 1 if current_hour in off_peak_hours else 0  # Encourage usage
+
+    def potential_function(self, battery_charge, solar, demand):
+        # Amount of demand met by grid
+        grid_reliance = max(0, demand - (solar + battery_charge))  
+        
+        # Penalty for low battery level
+        battery_health_penalty = max(0, self.min_battery_level - battery_charge)  
+        
+        # Positive reward for using solar
+        solar_reward = solar if solar >= demand else 0
+        
+        # Total potential function
+        return -grid_reliance - battery_health_penalty + solar_reward
+
+    def reward_function(self, action, battery_charge, demand, solar):
+        reward = 0
+        grid_cost = 0
+        current_hour = self.current_step % 24
+        
+        # Calculate potential before action
+        initial_peak_penalty = self.potential_function_peak(current_hour, grid_cost)
+        initial_off_peak_reward = self.potential_function_off_peak(current_hour)
+
+        if action == 0:  # Use Battery
+            if demand <= battery_charge:
+                battery_charge -= demand
+                reward += self.battery_cost_per_unit * demand
+            else:
+                unmet_demand = demand - battery_charge
+                grid_cost += unmet_demand * self.get_grid_cost(current_hour)
+                reward -= grid_cost  # Deduct the cost from reward
+                battery_charge = min(battery_charge + solar, self.max_battery)
+                
+
+        elif action == 1:  # Use Solar
+            if solar >= demand:
+                battery_charge = min(battery_charge + (solar - demand), self.max_battery)
+                reward += (solar - demand) * self.solar_cost_per_unit
+            else:
+                unmet_demand = demand - solar
+                if unmet_demand <= battery_charge:
+                    battery_charge -= unmet_demand
+                    reward += self.battery_cost_per_unit * unmet_demand
+                else:
+                    grid_cost += (unmet_demand - battery_charge) * self.get_grid_cost(current_hour)
+                    reward -= grid_cost  # Deduct the cost from reward
+                    battery_charge = min(battery_charge + solar, self.max_battery)
+
+        elif action == 2:  # Use Grid
+            battery_charge = min(battery_charge + solar, self.max_battery)
+            grid_cost += demand * self.get_grid_cost(current_hour)
+            reward -= grid_cost  # Deduct the cost from reward
+
+        # Calculate potential after action
+        final_peak_penalty = self.potential_function_peak(current_hour, grid_cost)
+        final_off_peak_reward = self.potential_function_off_peak(current_hour)
+
+        # Apply penalties or rewards based on potential difference
+        reward -= (final_peak_penalty - initial_peak_penalty)  # Penalty for peak grid usage
+        reward += (final_off_peak_reward - initial_off_peak_reward)  # Encourage off-peak grid usage
+
+        if battery_charge < self.min_battery_level:
+            penalty = (self.min_battery_level - battery_charge)  # No fixed multiplier, just the difference
+            reward -= penalty
+
+      
+
+        
+        return reward, battery_charge, grid_cost
+    def step(self, action):
+        solar = self.solar_input[self.current_step % len(self.solar_input)]
+        demand = self.demand[self.current_step % len(self.demand)]
+        battery_charge = self.battery_level
+        reward, battery_charge, grid_cost = self.reward_function(action, battery_charge, demand, solar)
+        self.battery_level = battery_charge
+
+        self.current_step += 1
+        done = self.current_step >= self.total_steps
+        return self._get_state(), reward, done, grid_cost  # Return state, reward, done flag, and grid cost
+
+def train_pbrss(episodes):
+    #env = MiniGridEnvDense()
+    env = SolarBatteryEnvPBRS_SF()
+    agent = QLearningAgent2()
+    all_rewardss = []
+    grid_costs_per_episodes = []
+    for episode in range(episodes):
+        # Reset environment to start at 12 AM
+        state = env.reset()
+        episode_grid_cost = 0  # Accumulate grid costs across the episode
+        
+        # Run the episode over 24 hours
+        for hour in range(24):
+            action = agent.choose_action(state)
+            next_state, reward, done, step_grid_cost = env.step(action)
+            agent.learn(state, action, reward, next_state)
+            episode_grid_cost += step_grid_cost  # Accumulate grid cost
+            state = next_state
+        # Provide a single reward based on total grid cost at the end of the episode
+        total_reward = -episode_grid_cost  # Example: minimize grid cost
+        all_rewardss.append(total_reward)  # Store sparse reward at the end
+        grid_costs_per_episodes.append(episode_grid_cost)  # Store total grid cost
+        agent.decay_exploration()
+    return all_rewardss, grid_costs_per_episodes
+
+
+
+
+import numpy as np
+
+def train_pbrs_SF(episodes): 
+    env = SolarBatteryEnvPBRS_SF()
+    agent = QLearningAgent()
+    all_rewards_SF = []
+    grid_costs_per_episode_SF = []
+
+    for episode in range(episodes):
+        # Randomly select a starting hour for the episode
+        start_hour = np.random.randint(0, 24)
+
+        # Create an array of hours, wrapping around to maintain a total of 24 hours
+        hours = np.arange(env.total_steps)  # Create an array of hours [0, 1, 2, ..., 23]
+        hours = np.roll(hours, -start_hour)  # Rotate the hours to start from the random hour
+        
+        # Shuffle solar and demand arrays based on the shuffled indices
+        env.solar_input = env.solar_input[hours]
+        env.demand = env.demand[hours]
+
+        state = env.reset()
+        total_reward = 0
+        total_grid_cost = 0
+        done = False
+
+        while not done:
+            action = agent.choose_action(state)
+            next_state, reward, done, grid_cost = env.step(action)  # Capture grid cost
+            agent.learn(state, action, reward, next_state)
+            total_reward += reward
+            total_grid_cost += grid_cost  # Accumulate grid cost
+            state = next_state
+
+        all_rewards_SF.append(total_reward)
+        grid_costs_per_episode_SF.append(total_grid_cost)
+        agent.decay_exploration()
+
+        
+
+    return all_rewards_SF, grid_costs_per_episode_SF
+
+
+import numpy as np
+
+
+
+
+def train_pbrss(episodes):
+    #env = MiniGridEnvDense()
+    env = SolarBatteryEnvPBRS_SF()
+    agent = QLearningAgent2()
+    all_rewardss = []
+    grid_costs_per_episodes = []
+
+    for episode in range(episodes):
+        # Reset environment to start at 12 AM
+        state = env.reset()
+        episode_grid_cost = 0  # Accumulate grid costs across the episode
+        
+        # Run the episode over 24 hours
+        for hour in range(24):
+            action = agent.choose_action(state)
+            next_state, reward, done, step_grid_cost = env.step(action)
+            agent.learn(state, action, reward, next_state)
+            episode_grid_cost += step_grid_cost  # Accumulate grid cost
+            state = next_state
+
+        # Provide a single reward based on total grid cost at the end of the episode
+        total_reward = -episode_grid_cost  # Example: minimize grid cost
+        all_rewardss.append(total_reward)  # Store sparse reward at the end
+        grid_costs_per_episodes.append(episode_grid_cost)  # Store total grid cost
+        agent.decay_exploration()
+
+    return all_rewardss, grid_costs_per_episodes
+
+
+def ran1(episodes, max_steps=24):
+    env = SolarBatteryEnvPBRS_SF()
+    agent = QLearningAgent()
+    all_rewardsq = []
+    grid_costs_per_episodeq = []
+    solar_datasets = {}
+    demand_datasets = {}
+    data_counts = {}
+    
+    for episode in range(episodes):
+        # Randomly select the starting hour (0-23)
+        start_hour = np.random.randint(0, 23)  # Changed to 23 to avoid last hour
+        
+        # Calculate remaining steps in the day
+        remaining_steps = 24 - start_hour
+        
+        # Roll solar input and demand to align with starting hour
+        env.solar_input = np.roll(env.solar_input, -start_hour)
+        env.demand = np.roll(env.demand, -start_hour)
+        
+        # Store dataset information every 1000 episodes
+        if episode % 1000 == 0:
+            print(f"\nEpisode {episode}:")
+            print(f"Start hour: {start_hour}:00")
+            print("Training on hours:", end=" ")
+            for h in range(start_hour, 24):
+                print(f"{h}:00", end=" ")
+            print("\n")
+            
+            # Store the actual data being used
+            solar_datasets[episode] = env.solar_input[start_hour:24]
+            demand_datasets[episode] = env.demand[start_hour:24]
+            data_counts[episode] = {
+                'start_hour': start_hour,
+                'hours_used': list(range(start_hour, 24))
+            }
+        
+        # Reset the environment and initialize variables
+        state = env.reset()
+        total_reward = 0
+        episode_grid_cost = 0
+        
+        # Run through the environment only for remaining hours
+        for step in range(remaining_steps):
+            action = agent.choose_action(state)
+            next_state, reward, done, grid_cost = env.step(action)
+            agent.learn(state, action, reward, next_state)
+            
+            total_reward += reward
+            episode_grid_cost += grid_cost
+            state = next_state
+            
+            if done:
+                break
+                
+        all_rewardsq.append(total_reward)
+        grid_costs_per_episodeq.append(episode_grid_cost)
+        agent.decay_exploration()
+        
+    return all_rewardsq, grid_costs_per_episodeq, solar_datasets, demand_datasets, data_counts
+import numpy as np
+import matplotlib.pyplot as plt
+
+def smooth_curve(data, window_size):
+    """Smooth the data using a simple moving average."""
+    return np.convolve(data, np.ones(window_size) / window_size, mode='valid')
+
+# Number of episodes for training
+episodes = 8000
+
+# Train models and get results
+all_rewards_SF, grid_costs_per_episode_SF = train_pbrs_SF(episodes)
+rewards_dense = train_dense(episodes)
+rewards_pbrs = train_pbrs(episodes)
+all_rewardsq, grid_costs_per_episodeq, solar_datasets, demand_datasets, data_counts= ran1(episodes)
+all_rewardss, grid_costs_per_episodes = train_pbrss(episodes)
+
+# Smooth the curves
+smoothed_grid_costs = smooth_curve(grid_costs_per_episode_SF, window_size=100)
+smoothed_dense = smooth_curve(rewards_dense, window_size=80)
+smoothed_pbrs = smooth_curve(rewards_pbrs, window_size=80)
+smoothed_random = smooth_curve( grid_costs_per_episodeq, window_size=100)
+smoothed_sparse = smooth_curve(grid_costs_per_episodes, window_size=80)
+
+
+# Prepare the plot
+plt.figure(figsize=(12, 6))
+
+plt.plot(smoothed_sparse, label='sparse', color='pink')
+
+# Plotting the smoothed rewards for dense and PBRS
+plt.plot(-smoothed_dense, label='Dense Reward Structure (Smoothed)', color='blue')
+plt.plot(-smoothed_pbrs, label='PBRS (Smoothed)', color='orange')
+
+
+plt.title("Learning Curves Comparison")
+plt.xlabel("Episode")
+plt.ylabel("Total Cost / Reward")
+plt.legend()
+plt.grid()
+plt.show()
+
+# Prepare the  SECOND plot
+plt.figure(figsize=(12, 6))
+
+# Plotting the smoothed grid costs
+plt.plot(smoothed_grid_costs, label='shuffled (Smoothed)', color='green')
+plt.plot(smoothed_random, label='random (Smoothed)', color='black')
+plt.plot(-smoothed_dense, label='Dense Reward Structure (Smoothed)', color='blue')
+
+plt.title("Learning Curves Comparison fOR Randomised environments")
+plt.xlabel("Episode")
+plt.ylabel("Total Cost / Reward")
+plt.legend()
+plt.grid()
+plt.show()
+
+
+
+
+
+
+
+
+
